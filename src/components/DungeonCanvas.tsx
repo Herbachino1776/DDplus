@@ -1,13 +1,17 @@
 import { Flame, Skull, UserRound, X } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { findRoomAtPoint, isPlacementVisible, normalizeRect } from '../editor/geometry';
+import { doorOrientation, findRoomAtPoint, isPlacementVisible, normalizeRect } from '../editor/geometry';
 import type { CanvasPoint, EditorState, Placement, Project, Room } from '../editor/types';
 
 interface DungeonCanvasProps {
   project: Project;
   editor: EditorState;
   selectedShapeId?: string;
+  selectedPlacementId?: string;
+  selectedDoorId?: string;
   onSelectShape: (id?: string) => void;
+  onSelectPlacement: (id?: string) => void;
+  onSelectDoor: (id?: string) => void;
   onCreateShape: (start: CanvasPoint, end: CanvasPoint) => void;
   onDeleteShape: (id: string) => void;
   onPlace: (point: CanvasPoint) => void;
@@ -55,7 +59,11 @@ export default function DungeonCanvas({
   project,
   editor,
   selectedShapeId,
+  selectedPlacementId,
+  selectedDoorId,
   onSelectShape,
+  onSelectPlacement,
+  onSelectDoor,
   onCreateShape,
   onDeleteShape,
   onPlace,
@@ -85,7 +93,12 @@ export default function DungeonCanvas({
       const target = findRoomAtPoint(project, point);
       if (editor.drawTool === 'erase' && target) onDeleteShape(target.id);
       if ((editor.drawTool === 'room' || editor.drawTool === 'corridor') && project.layers.structure.visible) {
-        onCreateShape(startPoint, point);
+        const isTap = startPoint.x === point.x && startPoint.z === point.z;
+        if (isTap && editor.brushSize > 1) {
+          onCreateShape(point, { x: point.x + editor.brushSize - 1, z: point.z + editor.brushSize - 1 });
+        } else if (!isTap) {
+          onCreateShape(startPoint, point);
+        }
       }
       if (!target && editor.drawTool === 'fill') onCreateShape(point, { x: point.x + editor.brushSize - 1, z: point.z + editor.brushSize - 1 });
     } else if (editor.mode === 'place') {
@@ -105,10 +118,11 @@ export default function DungeonCanvas({
       <div className="size-badge">{project.grid.width} x {project.grid.height}</div>
       <div className="zoom-badge">{project.metadata.zoom}%</div>
       <div className="snap-badge">Snap: {project.metadata.snap ? 'ON' : 'OFF'}</div>
-      <div className="selection-boundary" aria-hidden="true" />
+      <div className={`selection-boundary footprint-${project.metadata.footprint}`} aria-hidden="true" />
       <div
         ref={mapRef}
         className="dungeon-map"
+        style={{ transform: `scale(${project.metadata.zoom / 100})` }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -125,8 +139,13 @@ export default function DungeonCanvas({
                 selectedShapeId === shape.id ? 'selected' : '',
               ].join(' ')}
               style={shapeStyle(project, shape)}
+              onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
                 event.stopPropagation();
+                if (editor.mode === 'draw' && editor.drawTool === 'erase') {
+                  onDeleteShape(shape.id);
+                  return;
+                }
                 onSelectShape(shape.id);
               }}
               title={shape.label}
@@ -137,23 +156,45 @@ export default function DungeonCanvas({
 
         {project.layers.doors.visible &&
           project.doors.map((door) => (
-            <div
+            <button
               key={door.id}
-              className={`door-marker ${door.kind}`}
+              className={[
+                'door-marker',
+                door.kind,
+                doorOrientation(door),
+                selectedDoorId === door.id ? 'selected' : '',
+              ].join(' ')}
               style={{ left: `${(door.x / project.grid.width) * 100}%`, top: `${(door.z / project.grid.height) * 100}%` }}
-              title={`${door.id}: ${door.fromRoom} to ${door.toRoom}`}
+              title={`${door.id}: ${door.wallSide ?? 'unknown wall'} ${door.fromRoom}${door.toRoom ? ` to ${door.toRoom}` : ' one-sided'}`}
+              aria-label={`Select ${door.id}`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectDoor(door.id);
+              }}
             />
           ))}
 
         {project.placements.filter((placement) => isPlacementVisible(project, placement)).map((placement) => (
-          <div
+          <button
             key={placement.id}
-            className={`placement-marker ${placement.category}`}
+            className={[
+              'placement-marker',
+              placement.category,
+              selectedPlacementId === placement.id ? 'selected' : '',
+              placement.roomId ? '' : 'warning',
+            ].join(' ')}
             style={{ left: `${(placement.x / project.grid.width) * 100}%`, top: `${(placement.z / project.grid.height) * 100}%` }}
-            title={placement.id}
+            title={placement.roomId ? placement.id : `${placement.id}: outside authored rooms`}
+            aria-label={`Select ${placement.id}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelectPlacement(placement.id);
+            }}
           >
             <MarkerIcon kind={placement.kind} />
-          </div>
+          </button>
         ))}
 
         {preview && editor.mode === 'draw' && (

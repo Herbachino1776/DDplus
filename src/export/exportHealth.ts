@@ -1,5 +1,5 @@
-import { getAllStructure, pointInRoom, roomBounds } from '../editor/geometry';
-import type { CanvasPoint, Placement, Project, Room } from '../editor/types';
+import { doorOrientation, getAllStructure, pointInRoom, roomBounds } from '../editor/geometry';
+import type { CanvasPoint, Door, Placement, Project, Room, WallSide } from '../editor/types';
 
 export interface ExportHealth {
   counts: {
@@ -51,6 +51,24 @@ const isOverlapping = (a: Room, b: Room) => {
   const overlapsX = ab.minX < bb.maxX && ab.maxX > bb.minX;
   const overlapsZ = ab.minZ < bb.maxZ && ab.maxZ > bb.minZ;
   return overlapsX && overlapsZ;
+};
+
+const isNear = (a: number, b: number) => Math.abs(a - b) <= 0.05;
+
+const doorWallSideFromPosition = (room: Room, door: Door): WallSide | undefined => {
+  const bounds = roomBounds(room);
+  if (isNear(door.z, bounds.minZ) && door.x >= bounds.minX && door.x <= bounds.maxX) return 'north';
+  if (isNear(door.z, bounds.maxZ) && door.x >= bounds.minX && door.x <= bounds.maxX) return 'south';
+  if (isNear(door.x, bounds.minX) && door.z >= bounds.minZ && door.z <= bounds.maxZ) return 'west';
+  if (isNear(door.x, bounds.maxX) && door.z >= bounds.minZ && door.z <= bounds.maxZ) return 'east';
+  return undefined;
+};
+
+const doorWidthFitsWall = (room: Room, door: Door) => {
+  const wallSide = door.wallSide ?? doorWallSideFromPosition(room, door);
+  if (!wallSide) return true;
+  const wallLength = wallSide === 'north' || wallSide === 'south' ? room.width : room.depth;
+  return door.width <= Math.max(0.5, wallLength - 0.5);
 };
 
 const generatedJsLooksValid = (generatedJs?: string) => {
@@ -115,6 +133,37 @@ export const getExportHealth = (project: Project, generatedJs?: string): ExportH
   blockingProps
     .filter((placement) => !placement.dimensions.width || !placement.dimensions.depth)
     .forEach((placement) => warnings.push(`${placement.id} blocking prop cannot generate a useful blocker without dimensions.`));
+  project.placements
+    .filter((placement) => placement.kind !== 'enemySpawn' && !findContainingRoom(project, { x: placement.x, z: placement.z }))
+    .forEach((placement) => warnings.push(`${placement.id} ${placement.kind} placement is outside all room/corridor rectangles.`));
+
+  project.doors.forEach((door) => {
+    const fromRoom = structure.find((room) => room.id === door.fromRoom);
+    const toRoom = structure.find((room) => room.id === door.toRoom);
+    const wallSide = door.wallSide ?? (fromRoom ? doorWallSideFromPosition(fromRoom, door) : undefined);
+
+    if (door.snapped !== true) warnings.push(`${door.id} door is not snapped to a wall.`);
+    if (!door.toRoom || !toRoom) warnings.push(`${door.id} door has no second room or connector.`);
+    if (door.fromRoom && door.toRoom && door.fromRoom === door.toRoom) warnings.push(`${door.id} door connects ${door.fromRoom} to itself.`);
+    if (!wallSide) warnings.push(`${door.id} door wall side cannot be resolved.`);
+    if (fromRoom && !doorWallSideFromPosition(fromRoom, door)) warnings.push(`${door.id} door is inside ${fromRoom.id} interior instead of on its wall.`);
+    if (fromRoom && !doorWidthFitsWall(fromRoom, door)) warnings.push(`${door.id} door width is too large for the ${door.wallSide ?? 'resolved'} wall segment.`);
+    if (door.orientation && wallSide) {
+      const expectedOrientation = doorOrientation({ ...door, wallSide });
+      if (door.orientation !== expectedOrientation) warnings.push(`${door.id} door orientation does not match its ${wallSide} wall.`);
+    }
+  });
+
+  for (let index = 0; index < project.doors.length; index += 1) {
+    for (let otherIndex = index + 1; otherIndex < project.doors.length; otherIndex += 1) {
+      const a = project.doors[index];
+      const b = project.doors[otherIndex];
+      if (!a || !b) continue;
+      const sameWall = (a.primaryRoomId ?? a.fromRoom) === (b.primaryRoomId ?? b.fromRoom) && a.wallSide === b.wallSide;
+      const overlapDistance = Math.hypot(a.x - b.x, a.z - b.z);
+      if (sameWall && overlapDistance < Math.max(a.width, b.width)) warnings.push(`${a.id} overlaps ${b.id} on the same wall.`);
+    }
+  }
 
   for (let index = 0; index < project.rooms.length; index += 1) {
     for (let otherIndex = index + 1; otherIndex < project.rooms.length; otherIndex += 1) {
