@@ -145,8 +145,8 @@ const navWaypointForDoor = (door: Door) => ({
 
 const wallGapsForDoor = (door: Door) => [
   wallGap(door.fromRoom, door.x, door.z, door.width),
-  wallGap(door.toRoom, door.x, door.z, door.width),
-];
+  door.toRoom ? wallGap(door.toRoom, door.x, door.z, door.width) : undefined,
+].filter(Boolean);
 
 const placementBounds = (placement: Placement) => ({
   minX: Number((placement.x - placement.dimensions.width / 2).toFixed(2)),
@@ -182,7 +182,17 @@ export const exportDsbDefinition = (project: Project) => {
       navWaypoint: navWaypointForDoor(door),
       wallGaps: wallGapsForDoor(door),
       tags: Array.from(new Set([...door.tags, 'doorway'])),
-      userData: door.userData,
+      userData: {
+        ...door.userData,
+        ddplus: {
+          orientation: door.orientation,
+          wallSide: door.wallSide,
+          primaryRoomId: door.primaryRoomId ?? door.fromRoom,
+          secondaryRoomId: door.secondaryRoomId ?? door.toRoom,
+          snapped: door.snapped,
+          snapDistance: door.snapDistance,
+        },
+      },
     }));
 
   const blockingPlacements = project.placements

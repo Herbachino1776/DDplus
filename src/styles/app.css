@@ -75,6 +75,7 @@ button {
 }
 
 .top-bar {
+  position: relative;
   display: grid;
   grid-template-columns: 44px 44px minmax(105px, 1fr) 104px 74px 38px;
   gap: 8px;
@@ -102,6 +103,52 @@ button {
 .icon-button:hover {
   color: var(--cyan);
   background: rgba(255, 255, 255, 0.05);
+}
+
+.icon-button.disabled,
+.rail-button.disabled,
+.asset-card.disabled {
+  cursor: default;
+  opacity: 0.45;
+  filter: grayscale(0.3);
+}
+
+.icon-button.disabled:hover,
+.rail-button.disabled:hover,
+.asset-card.disabled:hover {
+  color: #bcb7ad;
+  background: transparent;
+  box-shadow: none;
+}
+
+.top-menu {
+  position: absolute;
+  right: 10px;
+  top: 64px;
+  z-index: 9;
+  width: min(280px, calc(100vw - 24px));
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(8, 11, 13, 0.96);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+
+.top-menu button {
+  min-height: 36px;
+  padding: 0 10px;
+  color: #e7e1d5;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  text-align: left;
+}
+
+.top-menu button:hover {
+  color: var(--cyan);
+  border-color: rgba(85, 217, 242, 0.55);
 }
 
 .brand-mark {
@@ -212,6 +259,8 @@ button {
   position: absolute;
   inset: 10% 5% 5% 3%;
   touch-action: none;
+  transform-origin: center;
+  transition: transform 120ms ease-out;
 }
 
 .selection-boundary {
@@ -239,6 +288,14 @@ button {
 .selection-boundary::after {
   right: -8px;
   bottom: -8px;
+}
+
+.selection-boundary.footprint-temple {
+  clip-path: polygon(25% 0, 75% 0, 75% 24%, 100% 24%, 100% 76%, 75% 76%, 75% 100%, 25% 100%, 25% 76%, 0 76%, 0 24%, 25% 24%);
+}
+
+.selection-boundary.footprint-cross {
+  clip-path: polygon(35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%);
 }
 
 .size-badge,
@@ -345,30 +402,60 @@ button {
 }
 
 .door-marker {
-  width: 22px;
+  width: 26px;
   height: 10px;
+  padding: 0;
   border: 2px solid #eee1c8;
-  border-bottom: 0;
-  border-radius: 999px 999px 0 0;
+  border-radius: 999px;
   background: rgba(0, 0, 0, 0.55);
   box-shadow: 0 0 8px rgba(255, 242, 207, 0.35);
+}
+
+.door-marker.vertical {
+  width: 10px;
+  height: 26px;
 }
 
 .door-marker.lockedDoor {
   border-color: var(--gold);
 }
 
+.door-marker.lockedDoor::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(212, 165, 95, 0.8);
+}
+
 .door-marker.secretDoor {
   border-color: rgba(85, 217, 242, 0.55);
   opacity: 0.8;
+  background: rgba(85, 217, 242, 0.08);
 }
 
-.door-marker.doubleDoor {
+.door-marker.doubleDoor.horizontal {
   width: 32px;
+}
+
+.door-marker.doubleDoor.vertical {
+  height: 32px;
+}
+
+.door-marker.selected,
+.placement-marker.selected {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
 }
 
 .placement-marker {
   min-width: 28px;
+  padding: 0;
   height: 28px;
   display: grid;
   place-items: center;
@@ -378,6 +465,10 @@ button {
   font-size: 10px;
   border: 2px solid rgba(0, 0, 0, 0.55);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.placement-marker.warning {
+  box-shadow: 0 0 0 3px rgba(212, 165, 95, 0.45), 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
 .placement-marker.light {
@@ -669,6 +760,11 @@ select:focus {
 .save-indicator {
   color: var(--muted);
   font-size: 12px;
+}
+
+.warning-text {
+  margin-top: 8px;
+  color: var(--gold);
 }
 
 .layers-list {

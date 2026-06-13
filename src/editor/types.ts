@@ -4,6 +4,8 @@ export type DrawTool = 'room' | 'corridor' | 'erase' | 'fill';
 export type PlaceCategory = 'all' | 'doors' | 'light' | 'enemies' | 'stairs' | 'objects' | 'decor';
 export type LocationType = 'dungeon' | 'crypt' | 'temple' | 'house';
 export type LayerKey = 'structure' | 'doors' | 'lighting' | 'enemies' | 'objects' | 'notes';
+export type DoorOrientation = 'horizontal' | 'vertical';
+export type WallSide = 'north' | 'south' | 'east' | 'west';
 
 export interface GridDefinition {
   width: number;
@@ -34,6 +36,12 @@ export interface Door {
   z: number;
   width: number;
   kind: 'door' | 'doubleDoor' | 'lockedDoor' | 'secretDoor';
+  orientation?: DoorOrientation;
+  wallSide?: WallSide;
+  primaryRoomId?: string;
+  secondaryRoomId?: string;
+  snapped?: boolean;
+  snapDistance?: number;
   tags: string[];
   userData: Record<string, unknown>;
 }
@@ -99,6 +107,7 @@ export interface EditorState {
   placeTool: Door['kind'] | Placement['kind'];
   selectedShapeId?: string;
   selectedPlacementId?: string;
+  selectedDoorId?: string;
 }
 
 export interface CanvasPoint {

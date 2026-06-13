@@ -52,6 +52,7 @@ ${listSection(health.errors, 'No errors reported.')}
 - DDplus v1 exports rectangle-authored rooms and corridors only.
 - Corridors are room-like rectangles tagged \`connector\`.
 - Props with collision use \`collisionRef\` pointing to generated blockers.
+- Door \`wallGaps\` are generated per connected room/corridor. North/south wall doors span X; east/west wall doors span Z.
 - Wall-mounted torch placements export as DSB \`torchFixtures\`.
 - Free-standing light placements export as \`lights\`.
 `;

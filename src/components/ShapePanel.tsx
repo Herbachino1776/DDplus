@@ -8,11 +8,11 @@ interface ShapePanelProps {
 }
 
 const footprints = [
-  { id: 'rectangle', label: 'Rectangle', Icon: RectangleHorizontal },
-  { id: 'temple', label: 'Temple', Icon: Castle },
-  { id: 'cross', label: 'Cross', Icon: Cross },
-  { id: 'cave', label: 'Cave', Icon: Hexagon },
-  { id: 'custom', label: 'Custom', Icon: Box },
+  { id: 'rectangle', label: 'Rectangle', Icon: RectangleHorizontal, disabled: false },
+  { id: 'temple', label: 'Temple', Icon: Castle, disabled: false },
+  { id: 'cross', label: 'Cross', Icon: Cross, disabled: false },
+  { id: 'cave', label: 'Cave', Icon: Hexagon, disabled: true },
+  { id: 'custom', label: 'Custom', Icon: Box, disabled: true },
 ] as const;
 
 export default function ShapePanel({ project, onProjectChange }: ShapePanelProps) {
@@ -96,11 +96,15 @@ export default function ShapePanel({ project, onProjectChange }: ShapePanelProps
       </div>
 
       <div className="asset-row compact">
-        {footprints.map(({ id, label, Icon }) => (
+        {footprints.map(({ id, label, Icon, disabled }) => (
           <button
             key={id}
-            className={project.metadata.footprint === id ? 'asset-card active' : 'asset-card'}
-            onClick={() => onProjectChange((current) => ({ ...current, metadata: { ...current.metadata, footprint: id } }))}
+            className={[project.metadata.footprint === id ? 'asset-card active' : 'asset-card', disabled ? 'disabled' : ''].join(' ')}
+            onClick={() => {
+              if (!disabled) onProjectChange((current) => ({ ...current, metadata: { ...current.metadata, footprint: id } }));
+            }}
+            title={disabled ? `${label} footprint coming soon.` : `${label} footprint`}
+            aria-disabled={disabled}
           >
             <Icon size={24} />
             <span>{label}</span>

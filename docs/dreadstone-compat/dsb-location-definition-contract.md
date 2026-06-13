@@ -107,11 +107,21 @@ Doors are connector records:
     { roomId: 'R01', position: { x: 8, y: 0, z: 10 }, width: 2 },
     { roomId: 'R02', position: { x: 8, y: 0, z: 10 }, width: 2 }
   ],
-  tags: ['doorway']
+  tags: ['doorway'],
+  userData: {
+    ddplus: {
+      orientation: 'horizontal',
+      wallSide: 'south',
+      primaryRoomId: 'R01',
+      secondaryRoomId: 'R02',
+      snapped: true,
+      snapDistance: 0
+    }
+  }
 }
 ```
 
-The DSB compiler treats `wallGaps` as declared openings in sealed room edges. DDplus v1 generates simple paired gaps. Hand-authored DSB maps may include extra connector-room wall gaps for multi-step connectors.
+The DSB compiler treats `wallGaps` as declared openings in sealed room edges. DDplus v1 generates explicit gaps for each connected room or connector. North/south wall doors span along X and render as horizontal markers. East/west wall doors span along Z and render as vertical markers. A vertical marker on an east or west wall is therefore expected; it means the opening cuts that wall.
 
 ## Props And Blockers
 
@@ -247,6 +257,14 @@ Warnings:
 - no doors/connectors
 - no exits
 - enemy spawn outside a room
+- placement outside all rooms/corridors
+- door is not snapped to a wall
+- door has no second room or connector
+- door is inside a room interior
+- door wall side cannot be resolved
+- door width is too large for the wall segment
+- door overlaps another door
+- door connects a room to itself
 - wall-mounted light not near a wall
 - blocking prop missing useful dimensions
 - likely accidental overlapping rooms

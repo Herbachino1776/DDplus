@@ -1,9 +1,15 @@
-import { Archive, DoorClosed, Flame, Footprints, Grid2X2, KeyRound, ScrollText, Skull, Sparkles, UserRound } from 'lucide-react';
+import { Archive, DoorClosed, Flame, Footprints, Grid2X2, KeyRound, ScrollText, Skull, Sparkles, Trash2, UserRound } from 'lucide-react';
 import type { Door, EditorState, PlaceCategory, Placement } from '../editor/types';
 
 interface PlacePanelProps {
   editor: EditorState;
+  selectedPlacement?: Placement;
+  selectedDoor?: Door;
   onEditorChange: (patch: Partial<EditorState>) => void;
+  onPlacementUpdate: (id: string, patch: Partial<Placement>) => void;
+  onPlacementDelete: (id: string) => void;
+  onDoorUpdate: (id: string, patch: Partial<Door>) => void;
+  onDoorDelete: (id: string) => void;
 }
 
 const categories: { id: PlaceCategory; label: string; Icon: typeof Grid2X2 }[] = [
@@ -32,7 +38,21 @@ const tools: { id: Door['kind'] | Placement['kind']; label: string; category: Pl
   { id: 'note', label: 'Note Marker', category: 'decor', Icon: ScrollText },
 ];
 
-export default function PlacePanel({ editor, onEditorChange }: PlacePanelProps) {
+const numericValue = (value: string, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+export default function PlacePanel({
+  editor,
+  selectedPlacement,
+  selectedDoor,
+  onEditorChange,
+  onPlacementUpdate,
+  onPlacementDelete,
+  onDoorUpdate,
+  onDoorDelete,
+}: PlacePanelProps) {
   const visibleTools = tools.filter((tool) => editor.placeCategory === 'all' || tool.category === editor.placeCategory);
 
   return (
@@ -58,6 +78,80 @@ export default function PlacePanel({ editor, onEditorChange }: PlacePanelProps) 
           </button>
         ))}
       </div>
+      {selectedDoor && (
+        <div className="inspector">
+          <div className="inspector-title">
+            <strong>{selectedDoor.id}</strong>
+            <button className="danger-button" onClick={() => onDoorDelete(selectedDoor.id)} aria-label="Delete selected door">
+              <Trash2 size={16} />
+            </button>
+          </div>
+          <div className="field-grid mini">
+            <label>
+              <span>Kind</span>
+              <input value={selectedDoor.kind} readOnly />
+            </label>
+            <label>
+              <span>Wall</span>
+              <input value={selectedDoor.wallSide ?? 'unresolved'} readOnly />
+            </label>
+            <label>
+              <span>Orient</span>
+              <input value={selectedDoor.orientation ?? 'unknown'} readOnly />
+            </label>
+            <label>
+              <span>From</span>
+              <input value={selectedDoor.fromRoom} readOnly />
+            </label>
+            <label>
+              <span>To</span>
+              <input value={selectedDoor.toRoom || 'none'} readOnly />
+            </label>
+            <label>
+              <span>Width</span>
+              <input type="number" min={0.5} step={0.5} value={selectedDoor.width} onChange={(event) => onDoorUpdate(selectedDoor.id, { width: numericValue(event.target.value, selectedDoor.width) })} />
+            </label>
+          </div>
+          {!selectedDoor.toRoom && <div className="empty-state warning-text">Door is one-sided; export health will warn until a second room or connector is adjacent.</div>}
+        </div>
+      )}
+      {selectedPlacement && (
+        <div className="inspector">
+          <div className="inspector-title">
+            <strong>{selectedPlacement.id}</strong>
+            <button className="danger-button" onClick={() => onPlacementDelete(selectedPlacement.id)} aria-label="Delete selected placement">
+              <Trash2 size={16} />
+            </button>
+          </div>
+          <div className="field-grid mini">
+            <label>
+              <span>Kind</span>
+              <input value={selectedPlacement.kind} readOnly />
+            </label>
+            <label>
+              <span>Room</span>
+              <input value={selectedPlacement.roomId ?? 'outside'} readOnly />
+            </label>
+            <label>
+              <span>Yaw</span>
+              <input type="number" value={selectedPlacement.rotationY} onChange={(event) => onPlacementUpdate(selectedPlacement.id, { rotationY: numericValue(event.target.value, selectedPlacement.rotationY) })} />
+            </label>
+            <label>
+              <span>X</span>
+              <input type="number" value={selectedPlacement.x} onChange={(event) => onPlacementUpdate(selectedPlacement.id, { x: numericValue(event.target.value, selectedPlacement.x) })} />
+            </label>
+            <label>
+              <span>Z</span>
+              <input type="number" value={selectedPlacement.z} onChange={(event) => onPlacementUpdate(selectedPlacement.id, { z: numericValue(event.target.value, selectedPlacement.z) })} />
+            </label>
+            <label>
+              <span>Y</span>
+              <input type="number" step={0.1} value={selectedPlacement.y} onChange={(event) => onPlacementUpdate(selectedPlacement.id, { y: numericValue(event.target.value, selectedPlacement.y) })} />
+            </label>
+          </div>
+          {!selectedPlacement.roomId && <div className="empty-state warning-text">Placement is outside authored rooms; export health will warn.</div>}
+        </div>
+      )}
     </div>
   );
 }
