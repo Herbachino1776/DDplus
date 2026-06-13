@@ -742,6 +742,63 @@ select:focus {
   gap: 9px;
 }
 
+.export-health {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(101, 194, 121, 0.32);
+  border-radius: 7px;
+}
+
+.export-health.has-warnings {
+  border-color: rgba(212, 165, 95, 0.45);
+}
+
+.export-health.has-errors {
+  border-color: rgba(216, 86, 82, 0.5);
+}
+
+.health-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.health-heading strong {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.health-heading span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.health-grid span,
+.health-list span {
+  min-width: 0;
+  padding: 5px 6px;
+  color: #cfc7b9;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.health-list {
+  display: grid;
+  gap: 5px;
+}
+
 .export-grid button {
   min-height: 54px;
   display: grid;
